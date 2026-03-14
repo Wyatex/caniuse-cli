@@ -1,0 +1,44 @@
+{
+  "name": "caniuse-cli",
+  "version": "1.0.0",
+  "module": "src/index.ts",
+  "type": "module",
+  "bin": {
+    "caniuse-cli": "./src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts",
+    "web:dev": "cd web && bun run dev",
+    "web:build": "cd web && bun run build"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.0",
+    "@babel/traverse": "^7.29.0",
+    "@babel/types": "^7.29.0",
+    "@elysiajs/html": "^1.4.0",
+    "@elysiajs/static": "^1.4.7",
+    "@vue/compiler-sfc": "^3.5.30",
+    "browserslist": "^4.28.1",
+    "caniuse-lite": "^1.0.30001778",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.3",
+    "elysia": "^1.4.27",
+    "fast-glob": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/babel__traverse": "^7.28.0",
+    "@types/bun": "latest",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "react": "^19.0.4",
+    "react-dom": "^19.0.4",
+    "typescript": "^5.9.3",
+    "vite": "^8.0.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
