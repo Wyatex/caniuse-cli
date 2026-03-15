@@ -104,21 +104,21 @@ function getFeatureSupport(featureName: string): BrowserVersions {
 
   // 1. 语法特性映射 (例如将 arrow-functions 自动转换为 transform-arrow-functions)
   const babelPlugin = SYNTAX_MAP[featureName] || featureName
-  if (babelPlugin.startsWith('transform-') || babelPlugin.startsWith('proposal-')) {
+  if (babelPlugin.startsWith?.('transform-') || babelPlugin.startsWith?.('proposal-')) {
     const support = getBabelPluginSupport(babelPlugin)
     if (support)
       return support
   }
 
   // 2. core-js API 特性 (例如 es.array.find-last)
-  if (featureName.startsWith('es.') || featureName.startsWith('esnext.')) {
+  if (featureName.startsWith?.('es.') || featureName.startsWith?.('esnext.')) {
     const support = getCoreJSSupport(featureName)
     if (support)
       return support
   }
 
   // 3. MDN DOM/BOM API (例如 api.IntersectionObserver)
-  if (featureName.startsWith('api.')) {
+  if (featureName.startsWith?.('api.')) {
     const apiName = featureName.split('.')[1]
     return getMdnSupport(apiName)
       || { chrome: '1', firefox: '1', safari: '1', edge: '1' } //
