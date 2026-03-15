@@ -18,7 +18,7 @@
 | 文件扫描 | fast-glob |
 | 代码分析 | @babel/parser + @babel/traverse |
 | 兼容性数据 | caniuse-lite, @babel/compat-data, core-js-compat |
-| 前端构建 | Vite |
+| 前端构建 | Vite + vite-plugin-singlefile |
 | CLI 解析 | Commander |
 
 ---
@@ -162,8 +162,8 @@ bun run dev
 # 开发模式 - 前端 (另一个终端)
 bun run web:dev
 
-# 构建前端
-bun run web:build
+# 构建前端（打包成单个HTML文件）
+bun run build
 
 # 启动完整应用
 bun run start --open
@@ -171,8 +171,24 @@ bun run start --open
 
 ---
 
+## 待完成的工作
+
+### 5. 构建与发布优化
+
+- [x] 添加 `vite-plugin-singlefile` 插件，将前端打包成单个内联HTML文件
+- [x] 简化服务器代码，直接返回内联HTML
+- [x] 添加 `build` 脚本用于发包
+- [x] 更新 package.json 的 files 字段，包含打包后的文件
+
+---
+
 ## 更新日志
 
+- **2026-03-15**: 构建与发布优化
+  - 添加 `vite-plugin-singlefile` 插件，前端打包成单个内联 HTML 文件 (204KB)
+  - 简化服务器代码，移除静态资源路由，直接返回单文件 HTML
+  - 添加 `build` 脚本，执行 `bun run build` 即可打包前端
+  - 更新 `package.json` 的 `files` 字段，包含 `src` 和 `web/dist`
 - **2026-03-15**: 修复浏览器兼容性数据源问题
   - 重构数据源架构：拆分为 `dataSources.ts` 和 `featureMappings.ts`
   - 修复 caniuse-lite 压缩数据解码问题

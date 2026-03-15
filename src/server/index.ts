@@ -2,29 +2,11 @@ import Elysia from 'elysia';
 import { fileTreeRoute } from './routes/fileTree';
 import { analyzeRoute, registerWSClient, unregisterWSClient } from './routes/analyze';
 import { openFileRoute } from './routes/openFile';
-import { join, dirname, extname } from 'path';
+import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
-// MIME types for static files
-const MIME_TYPES: Record<string, string> = {
-  '.html': 'text/html',
-  '.js': 'application/javascript',
-  '.css': 'text/css',
-  '.json': 'application/json',
-  '.png': 'image/png',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf',
-  '.eot': 'application/vnd.ms-fontobject',
-};
 
 export interface ServerOptions {
   port: number;
@@ -91,45 +73,16 @@ export function createServer(options: ServerOptions) {
   app.use(analyzeRoute(targetDir));
   app.use(openFileRoute(targetDir));
 
-  // Serve static files from web/dist if it exists
   console.log('webDistExists:', webDistExists, 'webDistPath:', webDistPath);
 
   if (webDistExists) {
-    // Serve index.html for root
-    app.get('/', async () => {
-      console.log('Root route hit, serving index.html');
-      const indexContent = await Bun.file(indexPath).text();
-      console.log('index.html length:', indexContent.length);
-      return new Response(indexContent, {
-        headers: {
-          'Content-Type': 'text/html',
-        },
-      });
-    });
+    // Read the inline HTML file once
+    const indexHtml = Bun.file(indexPath);
 
-    // Serve static files from assets directory
-    app.get('/assets/*', async ({ params }) => {
-      const filePath = join(webDistPath, 'assets', params['*'] as string);
-      const file = Bun.file(filePath);
-
-      if (!(await file.exists())) {
-        return new Response('Not Found', { status: 404 });
-      }
-
-      const ext = extname(filePath);
-      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-      return new Response(file, {
-        headers: {
-          'Content-Type': contentType,
-        },
-      });
-    });
-
-    // SPA fallback for all other routes
-    app.get('*', async () => {
-      const indexContent = await Bun.file(indexPath).text();
-      return new Response(indexContent, {
+    // Serve the single inline HTML file for all routes
+    app.get('/*', async () => {
+      const content = await indexHtml.text();
+      return new Response(content, {
         headers: {
           'Content-Type': 'text/html',
         },
