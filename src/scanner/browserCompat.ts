@@ -1,3 +1,4 @@
+import bcd from '@mdn/browser-compat-data';
 import type { CodeFeature } from './astAnalyzer';
 import {
   SYNTAX_FEATURE_MAP,
@@ -33,6 +34,64 @@ export interface FileAnalysis {
   minVersions: MinVersions;
 }
 
+// 新增从 MDN 读取支持的帮助函数
+function getMdnSupport(apiName?: string): BrowserVersions | null {
+  if (!apiName) {
+    return null;
+  }
+  try {
+    const apiData = bcd.api[apiName];
+    if (!apiData || !apiData.__compat) return null;
+
+    const support = apiData.__compat.support;
+
+    // MDN 的版本数据有时候是个数组（包含历史），这里取第一个版本的 version_added
+    const getVer = (browserInfo: any) => {
+      if (!browserInfo) return undefined;
+      const info = Array.isArray(browserInfo) ? browserInfo[0] : browserInfo;
+      return typeof info.version_added === 'string' ? info.version_added : undefined;
+    };
+
+    return {
+      chrome: getVer(support.chrome),
+      firefox: getVer(support.firefox),
+      safari: getVer(support.safari),
+      edge: getVer(support.edge),
+    };
+  } catch {
+    return null;
+  }
+}
+
+// 1. 补回专属于“语法”的映射字典
+const SYNTAX_MAP: Record<string, string> = {
+  'arrow-functions': 'transform-arrow-functions',
+  'es6-class': 'transform-classes',
+  'template-literals': 'transform-template-literals',
+  'spread-operator': 'transform-spread',
+  'rest-parameters': 'transform-parameters',
+  'async-functions': 'transform-async-to-generator',
+  'optional-chaining': 'transform-optional-chaining',
+  'nullish-coalescing': 'transform-nullish-coalescing-operator',
+  'logical-assignment': 'transform-logical-assignment-operators',
+  'exponentiation': 'transform-exponentiation-operator',
+  'class-static-block': 'transform-class-static-block',
+  'destructuring': 'transform-destructuring',
+  'for-of': 'transform-for-of',
+  'generators': 'transform-regenerator',
+  'default-parameters': 'transform-parameters',
+  'object-rest-spread': 'transform-object-rest-spread',
+  'public-class-fields': 'transform-class-properties',
+  'private-methods': 'transform-private-methods'
+};
+
+// 2. 补回极少数不在 Babel 转换范畴内，且数据源很难查的特定语法
+const MANUAL_SYNTAX_VERSIONS: Record<string, BrowserVersions> = {
+  'top-level-await': { chrome: '89', firefox: '89', safari: '15', edge: '89' },
+  'bigint': { chrome: '67', firefox: '68', safari: '14', edge: '79' },
+  'dynamic-import': { chrome: '63', firefox: '67', safari: '11.1', edge: '79' },
+};
+
 /**
  * Get browser support for a feature using the data source priority:
  * 1. Manual fallback (for features not in any data source)
@@ -41,40 +100,33 @@ export interface FileAnalysis {
  * 4. core-js-compat (polyfill modules)
  */
 function getFeatureSupport(featureName: string): BrowserVersions {
-  // 1. Check manual fallback first
-  const manualVersions = MANUAL_FEATURE_VERSIONS[featureName];
-  if (manualVersions) {
-    return manualVersions;
+  // 0. 手动指定的特性 (如 top-level-await)
+  if (MANUAL_SYNTAX_VERSIONS[featureName]) {
+    return MANUAL_SYNTAX_VERSIONS[featureName];
   }
 
-  // 2. Try @babel/compat-data for syntax features
-  const babelPlugin = SYNTAX_FEATURE_MAP[featureName];
-  if (babelPlugin) {
+  // 1. 语法特性映射 (例如将 arrow-functions 自动转换为 transform-arrow-functions)
+  const babelPlugin = SYNTAX_MAP[featureName] || featureName;
+  if (babelPlugin.startsWith('transform-') || babelPlugin.startsWith('proposal-')) {
     const support = getBabelPluginSupport(babelPlugin);
     if (support) return support;
   }
 
-  // 3. Try caniuse-lite for API features
-  const caniuseId = CANIUSE_FEATURE_MAP[featureName];
-  if (caniuseId) {
-    const support = getCanIUseSupport(caniuseId);
+  // 2. core-js API 特性 (例如 es.array.find-last)
+  if (featureName.startsWith('es.') || featureName.startsWith('esnext.')) {
+    const support = getCoreJSSupport(featureName);
     if (support) return support;
   }
 
-  // 4. Try core-js-compat for polyfill modules
-  const corejsModule = COREJS_FEATURE_MAP[featureName];
-  if (corejsModule) {
-    const support = getCoreJSSupport(corejsModule);
-    if (support) return support;
+  // 3. MDN DOM/BOM API (例如 api.IntersectionObserver)
+  if (featureName.startsWith('api.')) {
+    const apiName = featureName.split('.')[1];
+    return getMdnSupport(apiName)
+        || { chrome: '1', firefox: '1', safari: '1', edge: '1' }; //
   }
 
-  // Return conservative defaults if feature not found in any source
-  return {
-    chrome: '1',
-    firefox: '1',
-    safari: '1',
-    edge: '1',
-  };
+  // 兜底返回默认值
+  return { chrome: '1', firefox: '1', safari: '1', edge: '1' };
 }
 
 // Compare two version strings

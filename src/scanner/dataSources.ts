@@ -6,8 +6,10 @@
  * 2. caniuse-lite - API features (wide coverage)
  * 3. core-js-compat - Polyfill modules (detailed versions)
  */
-
 import babelPlugins from '@babel/compat-data/plugins';
+import caniuseFeatures from 'caniuse-lite/data/features';
+import { feature as unpackFeature } from 'caniuse-lite';
+import corejsData from 'core-js-compat/data';
 
 export interface BrowserVersions {
   chrome?: string;
@@ -16,10 +18,6 @@ export interface BrowserVersions {
   edge?: string;
   ie?: string;
 }
-
-// Cache for loaded data
-let caniuseFeaturesCache: Record<string, { stats: Record<string, Record<string, string>> }> | null = null;
-let corejsDataCache: Record<string, Record<string, string>> | null = null;
 
 /**
  * Get browser support data from @babel/compat-data for syntax features.
@@ -36,7 +34,6 @@ export function getBabelPluginSupport(pluginName: string): BrowserVersions | nul
   if (data.firefox) result.firefox = normalizeVersion(data.firefox);
   if (data.safari) result.safari = normalizeVersion(data.safari);
   if (data.edge) result.edge = normalizeVersion(data.edge);
-  if (data.ie) result.ie = normalizeVersion(data.ie);
 
   return result;
 }
@@ -46,17 +43,11 @@ export function getBabelPluginSupport(pluginName: string): BrowserVersions | nul
  */
 export function getCanIUseSupport(featureId: string): BrowserVersions | null {
   try {
-    // Lazy load caniuse-lite data and decoder
-    if (!caniuseFeaturesCache) {
-      caniuseFeaturesCache = require('caniuse-lite/data/features');
-    }
-
-    const packedData = caniuseFeaturesCache[featureId];
+    const packedData = (caniuseFeatures as Record<string, any>)[featureId];
     if (!packedData) return null;
 
     // Decode the packed data using caniuse-lite's feature function
-    const { feature } = require('caniuse-lite');
-    const featureData = feature(packedData);
+    const featureData = unpackFeature(packedData);
     if (!featureData || !featureData.stats) return null;
 
     const result: BrowserVersions = {};
@@ -85,19 +76,7 @@ export function getCanIUseSupport(featureId: string): BrowserVersions | null {
  */
 export function getCoreJSSupport(moduleName: string): BrowserVersions | null {
   try {
-    // Lazy load core-js-compat data
-    if (!corejsDataCache) {
-      const corejsCompat = require('core-js-compat');
-      corejsDataCache = corejsCompat.targets;
-    }
-
-    // Use core-js-compat's getTargetsList for module
-    const { getModulesListForTargetVersion } = require('core-js-compat');
-
-    // Alternative approach: use core-js-compat/data
-    const corejsData = require('core-js-compat/data');
-    const moduleData = corejsData[moduleName];
-
+    const moduleData = (corejsData as Record<string, Record<string, string>>)[moduleName];
     if (!moduleData) return null;
 
     const result: BrowserVersions = {};
@@ -178,37 +157,4 @@ function normalizeVersion(version: string): string {
   }
 
   return parts.join('.');
-}
-
-/**
- * Get all available babel plugins.
- */
-export function getAvailableBabelPlugins(): string[] {
-  return Object.keys(babelPlugins);
-}
-
-/**
- * Get all available caniuse-lite features.
- */
-export function getAvailableCanIUseFeatures(): string[] {
-  try {
-    if (!caniuseFeaturesCache) {
-      caniuseFeaturesCache = require('caniuse-lite/data/features');
-    }
-    return Object.keys(caniuseFeaturesCache);
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Get all available core-js modules.
- */
-export function getAvailableCoreJSModules(): string[] {
-  try {
-    const corejsData = require('core-js-compat/data');
-    return Object.keys(corejsData);
-  } catch {
-    return [];
-  }
 }

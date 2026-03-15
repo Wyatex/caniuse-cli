@@ -11,6 +11,7 @@
         "@babel/types": "^7.29.0",
         "@elysiajs/html": "^1.4.0",
         "@elysiajs/static": "^1.4.7",
+        "@mdn/browser-compat-data": "^7.3.7",
         "@vue/compiler-sfc": "^3.5.30",
         "browserslist": "^4.28.1",
         "caniuse-lite": "^1.0.30001779",
@@ -82,6 +83,8 @@
     "@kitajs/html": ["@kitajs/html@4.2.13", "https://registry.npmmirror.com/@kitajs/html/-/html-4.2.13.tgz", { "dependencies": { "csstype": "^3.1.3" } }, "sha512-o+8e61EsoLDPTP7rsPkYolca1YFybHuxU2Lr5fWDZCUkYT/6uBlVkvnZUdCXMQKentJL9dxwpR8/xK2Q+U4LhA=="],
 
     "@kitajs/ts-html-plugin": ["@kitajs/ts-html-plugin@4.1.4", "https://registry.npmmirror.com/@kitajs/ts-html-plugin/-/ts-html-plugin-4.1.4.tgz", { "dependencies": { "chalk": "^5.6.2", "tslib": "^2.8.1", "yargs": "^18.0.0" }, "peerDependencies": { "@kitajs/html": "^4.2.10", "typescript": "^5.9.3" }, "bin": { "ts-html-plugin": "dist/cli.js", "xss-scan": "dist/cli.js" } }, "sha512-xK5mNrhnIy73kJFKx5yVGChJyWFRGmIaE0sjlVxVYllk5dyaEYVCrIh1N8AfnseEHka8gAqzPGW95HlkhDvnJA=="],
+
+    "@mdn/browser-compat-data": ["@mdn/browser-compat-data@7.3.7", "https://registry.npmmirror.com/@mdn/browser-compat-data/-/browser-compat-data-7.3.7.tgz", {}, "sha512-5SOIC+Km3h9GGvirsvIZ09sqK41Vq+1II3dgpg4bEl6lb9ckVKvrEtOJ4vuoJh2X7/TK2TooSVqtrJCqbEQEAw=="],
 
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.1", "https://registry.npmmirror.com/@napi-rs/wasm-runtime/-/wasm-runtime-1.1.1.tgz", { "dependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1", "@tybys/wasm-util": "^0.10.1" } }, "sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A=="],
 
