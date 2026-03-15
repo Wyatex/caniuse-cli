@@ -2,11 +2,6 @@ import type { CodeFeature, FileAnalysis } from '../types'
 import * as React from 'react'
 import { BrowserBadgeList } from './BrowserBadge'
 
-interface ResultPanelProps {
-  analysis: FileAnalysis | null
-  isLoading: boolean
-}
-
 // Compare version strings for sorting
 function compareVersions(a: string, b: string): number {
   if (a === 'N/A')
@@ -79,7 +74,15 @@ async function openFile(filePath: string, line: number) {
   }
 }
 
-function FeatureGroupItem({ group }: { group: FeatureGroup }) {
+function FeatureGroupItem({
+  group,
+  isExpanded,
+  onToggle,
+}: {
+  group: FeatureGroup
+  isExpanded: boolean
+  onToggle: () => void
+}) {
   return (
     <div
       style={{
@@ -90,8 +93,28 @@ function FeatureGroupItem({ group }: { group: FeatureGroup }) {
         fontSize: '13px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <div>
+      <div
+        onClick={onToggle}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: isExpanded ? '8px' : '0',
+          cursor: 'pointer',
+          userSelect: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span
+            style={{
+              marginRight: '8px',
+              transition: 'transform 0.2s ease',
+              display: 'inline-block',
+              transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+            }}
+          >
+            ▶
+          </span>
           <span style={{ color: '#4da6ff', fontWeight: 500 }}>{group.syntax}</span>
           <span style={{ color: '#666', marginLeft: '8px' }}>
             (
@@ -105,36 +128,56 @@ function FeatureGroupItem({ group }: { group: FeatureGroup }) {
           +
         </span>
       </div>
-      <div style={{ paddingLeft: '12px', borderLeft: '2px solid #333' }}>
+      {isExpanded && (
         <div style={{ paddingLeft: '12px', borderLeft: '2px solid #333' }}>
-          {group.locations.map((loc) => { // 取消这里的 idx 参数
-            const fileName = loc.file.split('/').pop() ?? loc.file
-            return (
-              <a
-                // 使用 file 和 line 拼接作为唯一 key
-                key={`${loc.file}-${loc.line}-${loc.column}`}
-                onClick={() => openFile(loc.file, loc.line)}
-                style={{
-                  display: 'block',
-                  color: '#888',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  marginBottom: '2px',
-                }}
-                title={loc.file}
-              >
-                {fileName}
-                :
-                {loc.line}
-              </a>
-            )
-          })}
+          <div style={{ paddingLeft: '12px', borderLeft: '2px solid #333' }}>
+            {group.locations.map((loc) => {
+              const fileName = loc.file.split('/').pop() ?? loc.file
+              return (
+                <a
+                  key={`${loc.file}-${loc.line}-${loc.column}`}
+                  onClick={() => openFile(loc.file, loc.line)}
+                  style={{
+                    display: 'block',
+                    color: '#888',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginBottom: '2px',
+                  }}
+                  title={loc.file}
+                >
+                  {fileName}
+                  :
+                  {loc.line}
+                </a>
+              )
+            })}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
-export function ResultPanel({ analysis, isLoading }: ResultPanelProps) {
+export interface ResultPanelRef {
+  expandAll: () => void
+  collapseAll: () => void
+}
+
+interface ResultPanelProps {
+  analysis: FileAnalysis | null
+  isLoading: boolean
+  expandedFeatures?: Set<string>
+  onToggleFeature?: (feature: string) => void
+  onExpandAll?: () => void
+  onCollapseAll?: () => void
+}
+
+export function ResultPanel({
+  analysis,
+  isLoading,
+  expandedFeatures,
+  onToggleFeature,
+}: ResultPanelProps) {
   // 1. 处理“无分析数据”时的状态 (空状态与加载状态统一结构)
   if (!analysis) {
     return (
@@ -272,7 +315,12 @@ export function ResultPanel({ analysis, isLoading }: ResultPanelProps) {
             ? (
                 <div>
                   {groupedFeatures.map(group => (
-                    <FeatureGroupItem key={group.feature} group={group} />
+                    <FeatureGroupItem
+                      key={group.feature}
+                      group={group}
+                      isExpanded={expandedFeatures?.has(group.feature) ?? true}
+                      onToggle={() => onToggleFeature?.(group.feature)}
+                    />
                   ))}
                 </div>
               )

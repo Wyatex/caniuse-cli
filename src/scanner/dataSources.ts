@@ -81,6 +81,7 @@ export function getCanIUseSupport(featureId: string): BrowserVersions | null {
 
 /**
  * Get browser support data from core-js-compat.
+ * @todo: 如果moduleData是{}或者undefined，去@mdn/browser-compat-data找数据
  */
 export function getCoreJSSupport(moduleName: string): BrowserVersions | null {
   try {

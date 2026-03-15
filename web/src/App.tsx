@@ -20,6 +20,8 @@ export function App() {
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [selectedType, setSelectedType] = useState<'file' | 'directory' | null>(null)
   const [analysis, setAnalysis] = useState<FileAnalysis | null>(null)
+  const [expandedFeatures, setExpandedFeatures] = useState<Set<string>>(new Set())
+  const [allExpanded, setAllExpanded] = useState(true)
 
   // 1. 将原先的 isLoading 改名，仅用于 fetch file 的加载控制
   const [isFetchingFile, setIsFetchingFile] = useState(false)
@@ -34,6 +36,46 @@ export function App() {
 
   // 2. 动态派生 isLoading 状态，彻底去掉更新 isLoading 的 useEffect
   const isLoading = isFetchingFile || isAnalyzingDir || !!progress
+
+  // Toggle single feature expand/collapse
+  const toggleFeature = useCallback((feature: string) => {
+    setExpandedFeatures((prev) => {
+      const next = new Set(prev)
+      if (next.has(feature)) {
+        next.delete(feature)
+      }
+      else {
+        next.add(feature)
+      }
+      return next
+    })
+  }, [])
+
+  // Toggle all features expand/collapse
+  const toggleAllExpanded = useCallback(() => {
+    if (allExpanded) {
+      // Collapse all
+      setExpandedFeatures(new Set())
+      setAllExpanded(false)
+    }
+    else {
+      // Expand all
+      if (analysis?.features) {
+        const allFeatures = new Set(analysis.features.map(f => f.feature))
+        setExpandedFeatures(allFeatures)
+      }
+      setAllExpanded(true)
+    }
+  }, [allExpanded, analysis?.features])
+
+  // Reset expanded state when analysis changes
+  useEffect(() => {
+    if (analysis?.features) {
+      const allFeatures = new Set(analysis.features.map(f => f.feature))
+      setExpandedFeatures(allFeatures)
+      setAllExpanded(true)
+    }
+  }, [analysis?.features])
 
   // Fetch file tree on mount
   // (这里不受警告影响，因为 setFileTree 在异步的 .then 回调中)
@@ -153,8 +195,46 @@ export function App() {
         </aside>
 
         {/* Result Panel */}
-        <section style={{ flex: 1, overflow: 'hidden' }}>
-          <ResultPanel analysis={analysis} isLoading={isLoading} />
+        <section style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          {analysis && analysis.features.length > 0 && (
+            <div
+              style={{
+                padding: '8px 16px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <button
+                onClick={toggleAllExpanded}
+                style={{
+                  padding: '4px 12px',
+                  fontSize: '12px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '4px',
+                  color: '#ccc',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'
+                }}
+              >
+                {allExpanded ? 'Collapse All' : 'Expand All'}
+              </button>
+            </div>
+          )}
+          <ResultPanel
+            analysis={analysis}
+            isLoading={isLoading}
+            expandedFeatures={expandedFeatures}
+            onToggleFeature={toggleFeature}
+          />
         </section>
       </main>
 
