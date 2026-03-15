@@ -1,8 +1,8 @@
 {
   "name": "@wyatex/caniuse-cli",
+  "type": "module",
   "version": "0.0.1",
   "module": "src/index.ts",
-  "type": "module",
   "bin": {
     "caniuse-cli": "./src/index.ts"
   },
@@ -15,7 +15,11 @@
     "start": "bun run src/index.ts",
     "web:dev": "cd web && bun run dev",
     "web:build": "cd web && bun run build",
-    "build": "bun run web:build"
+    "build": "bun run web:build",
+    "lint": "eslint --fix ."
+  },
+  "peerDependencies": {
+    "typescript": "^5"
   },
   "dependencies": {
     "@babel/compat-data": "^7.29.0",
@@ -35,19 +39,22 @@
     "fast-glob": "^3.3.3"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^7.7.2",
+    "@eslint-react/eslint-plugin": "^2.13.0",
     "@types/babel__traverse": "^7.28.0",
     "@types/bun": "latest",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.0.3",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "jiti": "^2.6.1",
     "react": "^19.0.4",
     "react-dom": "^19.0.4",
     "typescript": "^5.9.3",
     "vite": "^8.0.0",
     "vite-plugin-singlefile": "^2.3.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
   }
 }

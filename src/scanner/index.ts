@@ -1,6 +1,6 @@
-export { scanFiles, getFileTree, buildFileTree, SCAN_PATTERNS, IGNORE_PATTERNS } from './fileScanner';
-export type { ScanResult, FileEntry, TreeNode } from './fileScanner';
-export { analyzeFile } from './astAnalyzer';
-export type { CodeFeature } from './astAnalyzer';
-export { calculateBrowserSupport, aggregateAnalyses } from './browserCompat';
-export type { BrowserSupport, MinVersions, FileAnalysis } from './browserCompat';
+export { analyzeFile } from './astAnalyzer'
+export type { CodeFeature } from './astAnalyzer'
+export { aggregateAnalyses, calculateBrowserSupport } from './browserCompat'
+export type { BrowserSupport, FileAnalysis, MinVersions } from './browserCompat'
+export { buildFileTree, getFileTree, IGNORE_PATTERNS, SCAN_PATTERNS, scanFiles } from './fileScanner'
+export type { FileEntry, ScanResult, TreeNode } from './fileScanner'

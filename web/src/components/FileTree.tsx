@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import type { TreeNode } from '../types';
+import type { TreeNode } from '../types'
+import * as React from 'react'
+import { useState } from 'react'
 
 interface FileTreeProps {
-  node: TreeNode;
-  selectedPath: string | null;
-  onSelect: (path: string, type: 'file' | 'directory') => void;
-  level?: number;
+  node: TreeNode
+  selectedPath: string | null
+  onSelect: (path: string, type: 'file' | 'directory') => void
+  level?: number
 }
 
 const FILE_ICONS: Record<string, string> = {
@@ -14,34 +15,34 @@ const FILE_ICONS: Record<string, string> = {
   js: '📒',
   jsx: '⚛️',
   vue: '💚',
-};
+}
 
-const DEFAULT_FILE_ICON = '📄';
-const DIRECTORY_ICON = '📁';
-const DIRECTORY_OPEN_ICON = '📂';
+const DEFAULT_FILE_ICON = '📄'
+const DIRECTORY_ICON = '📁'
+const DIRECTORY_OPEN_ICON = '📂'
 
 export function FileTree({ node, selectedPath, onSelect, level = 0 }: FileTreeProps) {
-  const [isExpanded, setIsExpanded] = useState(level < 2);
+  const [isExpanded, setIsExpanded] = useState(level < 2)
 
-  const isDirectory = node.type === 'directory';
-  const isSelected = selectedPath === node.path;
-  const hasChildren = isDirectory && node.children && node.children.length > 0;
+  const isDirectory = node.type === 'directory'
+  const isSelected = selectedPath === node.path
+  const hasChildren = isDirectory && node.children && node.children.length > 0
 
   const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation()
     if (isDirectory) {
-      setIsExpanded(!isExpanded);
+      setIsExpanded(!isExpanded)
     }
-    onSelect(node.path, node.type);
-  };
+    onSelect(node.path, node.type)
+  }
 
   const getIcon = () => {
     if (isDirectory) {
-      return isExpanded ? DIRECTORY_OPEN_ICON : DIRECTORY_ICON;
+      return isExpanded ? DIRECTORY_OPEN_ICON : DIRECTORY_ICON
     }
-    const ext = node.extension?.toLowerCase() || '';
-    return FILE_ICONS[ext] || DEFAULT_FILE_ICON;
-  };
+    const ext = node.extension?.toLowerCase() || ''
+    return FILE_ICONS[ext] || DEFAULT_FILE_ICON
+  }
 
   return (
     <div style={{ paddingLeft: level * 16 }}>
@@ -58,15 +59,15 @@ export function FileTree({ node, selectedPath, onSelect, level = 0 }: FileTreePr
           userSelect: 'none',
         }}
         onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
-          const target = e.currentTarget;
+          const target = e.currentTarget
           if (!isSelected) {
-            target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+            target.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'
           }
         }}
         onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
-          const target = e.currentTarget;
+          const target = e.currentTarget
           if (!isSelected) {
-            target.style.backgroundColor = 'transparent';
+            target.style.backgroundColor = 'transparent'
           }
         }}
       >
@@ -83,7 +84,7 @@ export function FileTree({ node, selectedPath, onSelect, level = 0 }: FileTreePr
 
       {isDirectory && isExpanded && hasChildren && (
         <div>
-          {node.children!.map((child) => (
+          {node.children!.map(child => (
             <FileTree
               key={child.path}
               node={child}
@@ -95,13 +96,13 @@ export function FileTree({ node, selectedPath, onSelect, level = 0 }: FileTreePr
         </div>
       )}
     </div>
-  );
+  )
 }
 
 interface FileTreeContainerProps {
-  tree: TreeNode | null;
-  selectedPath: string | null;
-  onSelect: (path: string, type: 'file' | 'directory') => void;
+  tree: TreeNode | null
+  selectedPath: string | null
+  onSelect: (path: string, type: 'file' | 'directory') => void
 }
 
 export function FileTreeContainer({ tree, selectedPath, onSelect }: FileTreeContainerProps) {
@@ -110,7 +111,7 @@ export function FileTreeContainer({ tree, selectedPath, onSelect }: FileTreeCont
       <div style={{ padding: '20px', color: '#666', textAlign: 'center' }}>
         Loading file tree...
       </div>
-    );
+    )
   }
 
   return (
@@ -123,5 +124,5 @@ export function FileTreeContainer({ tree, selectedPath, onSelect }: FileTreeCont
     >
       <FileTree node={tree} selectedPath={selectedPath} onSelect={onSelect} />
     </div>
-  );
+  )
 }

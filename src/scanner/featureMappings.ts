@@ -27,7 +27,7 @@ export const SYNTAX_FEATURE_MAP: Record<string, string> = {
   'object-rest-spread': 'transform-object-rest-spread',
   'public-class-fields': 'transform-class-properties',
   'private-methods': 'transform-private-methods',
-};
+}
 
 // API features → caniuse-lite feature IDs
 export const CANIUSE_FEATURE_MAP: Record<string, string> = {
@@ -74,7 +74,7 @@ export const CANIUSE_FEATURE_MAP: Record<string, string> = {
 
   // Number methods (caniuse-lite doesn't have separate entries)
   // These will fallback to core-js-compat or manual values
-};
+}
 
 // API features → core-js-compat module names
 export const COREJS_FEATURE_MAP: Record<string, string> = {
@@ -138,7 +138,7 @@ export const COREJS_FEATURE_MAP: Record<string, string> = {
   // Global functions
   'isfinite': 'es.global-this',
   'isnan': 'es.global-this',
-};
+}
 
 // Features that need manual fallback values (not in any data source)
 export const MANUAL_FEATURE_VERSIONS: Record<string, Record<string, string>> = {
@@ -153,7 +153,7 @@ export const MANUAL_FEATURE_VERSIONS: Record<string, Record<string, string>> = {
 
   // Numeric separator
   'numeric-separator': { chrome: '75', firefox: '70', safari: '13', edge: '79' },
-};
+}
 
 // Browser name mapping for different data sources
 export const BROWSER_NAME_MAP: Record<string, Record<string, string>> = {
@@ -175,4 +175,4 @@ export const BROWSER_NAME_MAP: Record<string, Record<string, string>> = {
     and_ff: 'and_ff',
     ios_saf: 'ios_saf',
   },
-};
+}

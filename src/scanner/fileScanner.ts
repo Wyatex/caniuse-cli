@@ -1,19 +1,19 @@
-import fg from 'fast-glob';
-import {join} from 'path';
+import { join } from 'node:path'
+import fg from 'fast-glob'
 
-export const SCAN_PATTERNS = ['**/*.{js,ts,jsx,tsx,vue}'];
-export const IGNORE_PATTERNS = ['**/node_modules/**', '**/.git/**'];
+export const SCAN_PATTERNS = ['**/*.{js,ts,jsx,tsx,vue}']
+export const IGNORE_PATTERNS = ['**/node_modules/**', '**/.git/**']
 
 export interface ScanResult {
-  files: string[];
-  total: number;
+  files: string[]
+  total: number
 }
 
 export interface FileEntry {
-  path: string;
-  relativePath: string;
-  type: 'file' | 'directory';
-  extension: string;
+  path: string
+  relativePath: string
+  type: 'file' | 'directory'
+  extension: string
 }
 
 export async function scanFiles(targetDir: string): Promise<ScanResult> {
@@ -22,12 +22,12 @@ export async function scanFiles(targetDir: string): Promise<ScanResult> {
     absolute: true,
     ignore: IGNORE_PATTERNS,
     onlyFiles: true,
-  });
+  })
 
   return {
     files: files.sort(),
     total: files.length,
-  };
+  }
 }
 
 export async function getFileTree(targetDir: string): Promise<FileEntry[]> {
@@ -35,26 +35,26 @@ export async function getFileTree(targetDir: string): Promise<FileEntry[]> {
     cwd: targetDir,
     ignore: IGNORE_PATTERNS,
     onlyFiles: true,
-  });
+  })
 
   return files.map((file) => {
-    const ext = file.split('.').pop() ?? '';
+    const ext = file.split('.').pop() ?? ''
     return {
       path: join(targetDir, file),
       relativePath: file,
       type: 'file',
       extension: ext,
-    };
-  });
+    }
+  })
 }
 
 export interface TreeNode {
-  name: string;
-  path: string;
-  relativePath: string;
-  type: 'file' | 'directory';
-  children?: TreeNode[];
-  extension?: string;
+  name: string
+  path: string
+  relativePath: string
+  type: 'file' | 'directory'
+  children?: TreeNode[]
+  extension?: string
 }
 
 export function buildFileTree(targetDir: string): TreeNode {
@@ -62,7 +62,7 @@ export function buildFileTree(targetDir: string): TreeNode {
     cwd: targetDir,
     ignore: IGNORE_PATTERNS,
     onlyFiles: true,
-  });
+  })
 
   const root: TreeNode = {
     name: targetDir.split(/[/\\]/).pop() ?? 'root',
@@ -70,25 +70,25 @@ export function buildFileTree(targetDir: string): TreeNode {
     relativePath: '',
     type: 'directory',
     children: [],
-  };
+  }
 
   for (const file of files) {
-    const parts = file.split(/[/\\]/);
-    let current = root;
+    const parts = file.split(/[/\\]/)
+    let current = root
 
     for (let i = 0; i < parts.length; i++) {
-      const part = parts[i] ?? '';
-      const isFile = i === parts.length - 1;
+      const part = parts[i] ?? ''
+      const isFile = i === parts.length - 1
 
       if (!current.children) {
-        current.children = [];
+        current.children = []
       }
 
-      let child = current.children.find((c) => c.name === part);
+      let child = current.children.find(c => c.name === part)
 
       if (!child) {
-        const childPath = join(targetDir, ...parts.slice(0, i + 1));
-        const relativePath = parts.slice(0, i + 1).join('/');
+        const childPath = join(targetDir, ...parts.slice(0, i + 1))
+        const relativePath = parts.slice(0, i + 1).join('/')
 
         child = {
           name: part,
@@ -97,12 +97,12 @@ export function buildFileTree(targetDir: string): TreeNode {
           type: isFile ? 'file' : 'directory',
           children: isFile ? undefined : [],
           extension: isFile ? part.split('.').pop() : undefined,
-        };
+        }
 
-        current.children.push(child);
+        current.children.push(child)
       }
 
-      current = child;
+      current = child
     }
   }
 
@@ -111,15 +111,15 @@ export function buildFileTree(targetDir: string): TreeNode {
     if (node.children) {
       node.children.sort((a, b) => {
         if (a.type !== b.type) {
-          return a.type === 'directory' ? -1 : 1;
+          return a.type === 'directory' ? -1 : 1
         }
-        return a.name.localeCompare(b.name);
-      });
-      node.children.forEach(sortChildren);
+        return a.name.localeCompare(b.name)
+      })
+      node.children.forEach(sortChildren)
     }
   }
 
-  sortChildren(root);
+  sortChildren(root)
 
-  return root;
+  return root
 }

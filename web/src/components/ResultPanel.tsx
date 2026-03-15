@@ -1,45 +1,53 @@
-import React from 'react';
-import type { FileAnalysis, CodeFeature } from '../types';
-import { BrowserBadgeList } from './BrowserBadge';
+import type { CodeFeature, FileAnalysis } from '../types'
+import * as React from 'react'
+import { BrowserBadgeList } from './BrowserBadge'
 
 interface ResultPanelProps {
-  analysis: FileAnalysis | null;
-  isLoading: boolean;
+  analysis: FileAnalysis | null
+  isLoading: boolean
 }
 
 // Compare version strings for sorting
 function compareVersions(a: string, b: string): number {
-  if (a === 'N/A') return -1;
-  if (b === 'N/A') return 1;
-  if (a === 'all') return 1;
-  if (b === 'all') return -1;
-  if (a === 'preview') return -1;
-  if (b === 'preview') return 1;
+  if (a === 'N/A')
+    return -1
+  if (b === 'N/A')
+    return 1
+  if (a === 'all')
+    return 1
+  if (b === 'all')
+    return -1
+  if (a === 'preview')
+    return -1
+  if (b === 'preview')
+    return 1
 
-  const aParts = a.split('.').map(Number);
-  const bParts = b.split('.').map(Number);
+  const aParts = a.split('.').map(Number)
+  const bParts = b.split('.').map(Number)
 
   for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-    const aVal = aParts[i] ?? 0;
-    const bVal = bParts[i] ?? 0;
+    const aVal = aParts[i] ?? 0
+    const bVal = bParts[i] ?? 0
 
-    if (aVal > bVal) return 1;
-    if (aVal < bVal) return -1;
+    if (aVal > bVal)
+      return 1
+    if (aVal < bVal)
+      return -1
   }
 
-  return 0;
+  return 0
 }
 
 // Group features by feature name
 interface FeatureGroup {
-  feature: string;
-  syntax: string;
-  maxVersion: string;
-  locations: Array<{ file: string; line: number; column: number }>;
+  feature: string
+  syntax: string
+  maxVersion: string
+  locations: Array<{ file: string, line: number, column: number }>
 }
 
 function groupFeatures(features: CodeFeature[]): FeatureGroup[] {
-  const groups = new Map<string, FeatureGroup>();
+  const groups = new Map<string, FeatureGroup>()
 
   for (const f of features) {
     if (!groups.has(f.feature)) {
@@ -48,26 +56,26 @@ function groupFeatures(features: CodeFeature[]): FeatureGroup[] {
         syntax: f.syntax,
         maxVersion: f.maxVersion ?? '0',
         locations: [],
-      });
+      })
     }
-    groups.get(f.feature)!.locations.push(f.location);
+    groups.get(f.feature)!.locations.push(f.location)
   }
 
   // Sort groups by maxVersion descending (higher version first)
-  return Array.from(groups.values()).sort((a, b) =>
-    compareVersions(b.maxVersion, a.maxVersion)
-  );
+  return [...groups.values()].toSorted((a, b) =>
+    compareVersions(b.maxVersion, a.maxVersion))
 }
 
 async function openFile(filePath: string, line: number) {
   try {
-    const response = await fetch(`/api/open-file?path=${encodeURIComponent(filePath)}&line=${line}`);
-    const result = await response.json();
+    const response = await fetch(`/api/open-file?path=${encodeURIComponent(filePath)}&line=${line}`)
+    const result = await response.json()
     if (!result.success) {
-      console.error('Failed to open file:', result.error);
+      console.error('Failed to open file:', result.error)
     }
-  } catch (error) {
-    console.error('Failed to open file:', error);
+  }
+  catch (error) {
+    console.error('Failed to open file:', error)
   }
 }
 
@@ -86,60 +94,48 @@ function FeatureGroupItem({ group }: { group: FeatureGroup }) {
         <div>
           <span style={{ color: '#4da6ff', fontWeight: 500 }}>{group.syntax}</span>
           <span style={{ color: '#666', marginLeft: '8px' }}>
-            ({group.feature})
+            (
+            {group.feature}
+            )
           </span>
         </div>
         <span style={{ color: '#888', fontSize: '12px' }}>
-          v{group.maxVersion}+
+          v
+          {group.maxVersion}
+          +
         </span>
       </div>
       <div style={{ paddingLeft: '12px', borderLeft: '2px solid #333' }}>
-        {group.locations.map((loc, idx) => {
-          const fileName = loc.file.split('/').pop() ?? loc.file;
-          return (
-            <a
-              key={idx}
-              onClick={() => openFile(loc.file, loc.line)}
-              style={{
-                display: 'block',
-                color: '#888',
-                cursor: 'pointer',
-                fontSize: '12px',
-                marginBottom: '2px',
-              }}
-              title={loc.file}
-            >
-              {fileName}:{loc.line}
-            </a>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-export function ResultPanel({ analysis, isLoading }: ResultPanelProps) {
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          height: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#666',
-        }}
-      >
-        <div style={{ textAlign: 'center' }}>
-          <div className="spinner" style={{ fontSize: '32px', marginBottom: '16px' }}>
-            ⏳
-          </div>
-          <div>Analyzing...</div>
+        <div style={{ paddingLeft: '12px', borderLeft: '2px solid #333' }}>
+          {group.locations.map((loc) => { // 取消这里的 idx 参数
+            const fileName = loc.file.split('/').pop() ?? loc.file
+            return (
+              <a
+                // 使用 file 和 line 拼接作为唯一 key
+                key={`${loc.file}-${loc.line}-${loc.column}`}
+                onClick={() => openFile(loc.file, loc.line)}
+                style={{
+                  display: 'block',
+                  color: '#888',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  marginBottom: '2px',
+                }}
+                title={loc.file}
+              >
+                {fileName}
+                :
+                {loc.line}
+              </a>
+            )
+          })}
         </div>
       </div>
-    );
-  }
-
+    </div>
+  )
+}
+export function ResultPanel({ analysis, isLoading }: ResultPanelProps) {
+  // 1. 处理“无分析数据”时的状态 (空状态与加载状态统一结构)
   if (!analysis) {
     return (
       <div
@@ -151,72 +147,150 @@ export function ResultPanel({ analysis, isLoading }: ResultPanelProps) {
           color: '#666',
         }}
       >
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔍</div>
-          <div style={{ fontSize: '16px' }}>Select a file or directory to analyze</div>
-          <div style={{ fontSize: '14px', marginTop: '8px', color: '#555' }}>
+        {/* 固定高度和宽度的容器，防止内容切换时发生上下跳动 */}
+        <div style={{ textAlign: 'center', minHeight: '140px' }}>
+
+          {/* 固定的图标区域 */}
+          <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+            {isLoading
+              ? (
+                  <div className="spinner" style={{ fontSize: '32px' }}>⏳</div>
+                )
+              : (
+                  <div style={{ fontSize: '48px', transition: 'all 0.2s ease' }}>🔍</div>
+                )}
+          </div>
+
+          {/* 固定的标题区域 */}
+          <div style={{ fontSize: '16px', height: '24px', transition: 'color 0.2s ease' }}>
+            {isLoading ? 'Analyzing...' : 'Select a file or directory to analyze'}
+          </div>
+
+          {/* 固定的副标题区域：使用透明度控制显示/隐藏，而不是直接销毁 DOM */}
+          <div style={{
+            fontSize: '14px',
+            marginTop: '8px',
+            color: '#555',
+            opacity: isLoading ? 0 : 1, // 关键：加载时变为完全透明
+            visibility: isLoading ? 'hidden' : 'visible',
+            transition: 'opacity 0.2s ease',
+          }}
+          >
             Click on any file or folder in the left panel
           </div>
+
         </div>
       </div>
-    );
+    )
   }
 
-  const hasFeatures = analysis.features.length > 0;
-  const groupedFeatures = hasFeatures ? groupFeatures(analysis.features) : [];
+  // 2. 处理“有分析数据”时的状态
+  const hasFeatures = analysis.features.length > 0
+  const groupedFeatures = hasFeatures ? groupFeatures(analysis.features) : []
 
   return (
-    <div style={{ height: '100%', overflow: 'auto', padding: '20px' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <h3
+    <div style={{ height: '100%', position: 'relative' }}>
+
+      {/* 优化体验：如果在已有结果的情况下触发了 isLoading (比如点击了另一个文件)，
+        我们不销毁当前页面，而是覆盖一个半透明的加载遮罩层。
+      */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.2)', // 半透明遮罩
+          backdropFilter: 'blur(2px)', // 毛玻璃效果 (可选)
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+          opacity: isLoading ? 1 : 0,
+          pointerEvents: isLoading ? 'auto' : 'none', // 不加载时允许鼠标穿透
+          transition: 'opacity 0.2s ease', // 平滑渐变
+          borderRadius: '8px',
+        }}
+      >
+        <div
+          className="spinner"
           style={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#888',
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            marginBottom: '12px',
+            fontSize: '32px',
+            backgroundColor: '#222', // 给 spinner 加个小底色更显眼
+            padding: '12px',
+            borderRadius: '50%',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
           }}
         >
-          Browser Requirements
-        </h3>
-        <BrowserBadgeList minVersions={analysis.minVersions} />
+          ⏳
+        </div>
       </div>
 
-      <div>
-        <h3
-          style={{
-            fontSize: '14px',
-            fontWeight: 600,
-            color: '#888',
-            textTransform: 'uppercase',
-            letterSpacing: '1px',
-            marginBottom: '12px',
-          }}
-        >
-          Detected Features ({groupedFeatures.length})
-        </h3>
-
-        {hasFeatures ? (
-          <div>
-            {groupedFeatures.map((group) => (
-              <FeatureGroupItem key={group.feature} group={group} />
-            ))}
-          </div>
-        ) : (
-          <div
+      {/* 原本的内容区域，加载时让其轻微变暗 */}
+      <div style={{
+        height: '100%',
+        overflow: 'auto',
+        padding: '20px',
+        opacity: isLoading ? 0.6 : 1, // 加载时内容变暗
+        transition: 'opacity 0.2s ease',
+      }}
+      >
+        <div style={{ marginBottom: '24px' }}>
+          <h3
             style={{
-              padding: '20px',
-              textAlign: 'center',
-              color: '#555',
-              backgroundColor: 'rgba(255, 255, 255, 0.02)',
-              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#888',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '12px',
             }}
           >
-            No modern JavaScript features detected
-          </div>
-        )}
+            Browser Requirements
+          </h3>
+          <BrowserBadgeList minVersions={analysis.minVersions} />
+        </div>
+
+        <div>
+          <h3
+            style={{
+              fontSize: '14px',
+              fontWeight: 600,
+              color: '#888',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              marginBottom: '12px',
+            }}
+          >
+            Detected Features (
+            {groupedFeatures.length}
+            )
+          </h3>
+
+          {hasFeatures
+            ? (
+                <div>
+                  {groupedFeatures.map(group => (
+                    <FeatureGroupItem key={group.feature} group={group} />
+                  ))}
+                </div>
+              )
+            : (
+                <div
+                  style={{
+                    padding: '20px',
+                    textAlign: 'center',
+                    color: '#555',
+                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '8px',
+                  }}
+                >
+                  No modern JavaScript features detected
+                </div>
+              )}
+        </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,27 +1,27 @@
-import Elysia from 'elysia';
-import { fileTreeRoute } from './routes/fileTree';
-import { analyzeRoute, registerWSClient, unregisterWSClient } from './routes/analyze';
-import { openFileRoute } from './routes/openFile';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+import { existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import Elysia from 'elysia'
+import { analyzeRoute, registerWSClient, unregisterWSClient } from './routes/analyze'
+import { fileTreeRoute } from './routes/fileTree'
+import { openFileRoute } from './routes/openFile'
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export interface ServerOptions {
-  port: number;
-  targetDir: string;
+  port: number
+  targetDir: string
 }
 
 export function createServer(options: ServerOptions) {
-  const { port, targetDir } = options;
+  const { port, targetDir } = options
 
   // Determine the web dist directory
-  const webDistPath = join(__dirname, '../../web/dist');
-  const webDistExists = existsSync(webDistPath);
-  const indexPath = join(webDistPath, 'index.html');
+  const webDistPath = join(__dirname, '../../web/dist')
+  const webDistExists = existsSync(webDistPath)
+  const indexPath = join(webDistPath, 'index.html')
 
-  const app = new Elysia();
+  const app = new Elysia()
 
   // Add CORS headers for development
   app.onRequest(({ request }) => {
@@ -34,61 +34,60 @@ export function createServer(options: ServerOptions) {
           'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
           'Access-Control-Allow-Headers': 'Content-Type',
         },
-      });
+      })
     }
-  });
+  })
 
   app.onAfterHandle(({ response }) => {
     // Add CORS headers to all responses
     if (response instanceof Response) {
-      const headers = new Headers(response.headers);
-      headers.set('Access-Control-Allow-Origin', '*');
+      const headers = new Headers(response.headers)
+      headers.set('Access-Control-Allow-Origin', '*')
       return new Response(response.body, {
         status: response.status,
         headers,
-      });
+      })
     }
-    return response;
-  });
+    return response
+  })
 
   // WebSocket for real-time progress
   app.ws('/ws', {
     open(ws) {
-      console.log('WebSocket client connected');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      registerWSClient(ws.raw);
+      console.log('WebSocket client connected')
+      registerWSClient(ws.raw)
     },
     close(ws) {
-      console.log('WebSocket client disconnected');
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      unregisterWSClient(ws.raw);
+      console.log('WebSocket client disconnected')
+      unregisterWSClient(ws.raw)
     },
     message(ws, message) {
-      console.log('WebSocket message:', message);
+      console.log('WebSocket message:', message)
     },
-  });
+  })
 
   // API routes
-  app.use(fileTreeRoute(targetDir));
-  app.use(analyzeRoute(targetDir));
-  app.use(openFileRoute(targetDir));
+  app.use(fileTreeRoute(targetDir))
+  app.use(analyzeRoute(targetDir))
+  app.use(openFileRoute(targetDir))
 
-  console.log('webDistExists:', webDistExists, 'webDistPath:', webDistPath);
+  console.log('webDistExists:', webDistExists, 'webDistPath:', webDistPath)
 
   if (webDistExists) {
     // Read the inline HTML file once
-    const indexHtml = Bun.file(indexPath);
+    const indexHtml = Bun.file(indexPath)
 
     // Serve the single inline HTML file for all routes
     app.get('/*', async () => {
-      const content = await indexHtml.text();
+      const content = await indexHtml.text()
       return new Response(content, {
         headers: {
           'Content-Type': 'text/html',
         },
-      });
-    });
-  } else {
+      })
+    })
+  }
+  else {
     // Development mode - serve a simple placeholder
     app.get('/', () => {
       return `<!DOCTYPE html>
@@ -127,18 +126,18 @@ export function createServer(options: ServerOptions) {
     <a class="api-link" href="/api/file-tree">API: File Tree</a>
   </div>
 </body>
-</html>`;
-    });
+</html>`
+    })
   }
 
   return {
     app,
     start: () => {
       app.listen(port, () => {
-        console.log(`Server running at http://localhost:${port}`);
-        console.log(`Analyzing directory: ${targetDir}`);
-      });
-      return app;
+        console.log(`Server running at http://localhost:${port}`)
+        console.log(`Analyzing directory: ${targetDir}`)
+      })
+      return app
     },
-  };
+  }
 }

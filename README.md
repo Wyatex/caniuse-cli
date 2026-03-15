@@ -23,11 +23,11 @@
 
 ## Supported File Types
 
-| Type | Extensions |
-|------|------------|
+| Type       | Extensions    |
+| ---------- | ------------- |
 | JavaScript | `.js`, `.jsx` |
 | TypeScript | `.ts`, `.tsx` |
-| Vue | `.vue` |
+| Vue        | `.vue`        |
 
 ## Installation
 
@@ -63,12 +63,12 @@ caniuse-cli -p 8080 -o
 
 ### Command Line Options
 
-| Option | Alias | Description |
-|--------|-------|-------------|
-| `[directory]` | - | Directory to analyze (default: current directory) |
-| `--port <number>` | `-p` | Server port (default: 3000) |
-| `--open` | `-o` | Open browser automatically |
-| `--no-open` | - | Don't open browser automatically |
+| Option            | Alias | Description                                       |
+| ----------------- | ----- | ------------------------------------------------- |
+| `[directory]`     | -     | Directory to analyze (default: current directory) |
+| `--port <number>` | `-p`  | Server port (default: 3000)                       |
+| `--open`          | `-o`  | Open browser automatically                        |
+| `--no-open`       | -     | Don't open browser automatically                  |
 
 ## Screenshot
 
@@ -143,21 +143,21 @@ caniuse-cli -p 8080 -o
 
 This tool combines multiple data sources for accurate compatibility information:
 
-| Source | Purpose |
-|--------|---------|
-| [caniuse-lite](https://github.com/browserslist/caniuse-lite) | Native API support |
-| [@babel/compat-data](https://babeljs.io/) | Syntax transform plugins |
-| [core-js-compat](https://github.com/zloirock/core-js) | Polyfill requirements |
+| Source                                                       | Purpose                  |
+| ------------------------------------------------------------ | ------------------------ |
+| [caniuse-lite](https://github.com/browserslist/caniuse-lite) | Native API support       |
+| [@babel/compat-data](https://babeljs.io/)                    | Syntax transform plugins |
+| [core-js-compat](https://github.com/zloirock/core-js)        | Polyfill requirements    |
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | [Bun](https://bun.sh) |
-| Backend | [ElysiaJS](https://elysiajs.com) |
-| Frontend | [React](https://react.dev) + [TypeScript](https://www.typescriptlang.org) |
-| Build | [Vite](https://vitejs.dev) + [vite-plugin-singlefile](https://github.com/richardtallent/vite-plugin-singlefile) |
-| Parser | [@babel/parser](https://babeljs.io/docs/babel-parser) + [@vue/compiler-sfc](https://vuejs.org) |
+| Layer    | Technology                                                                                                      |
+| -------- | --------------------------------------------------------------------------------------------------------------- |
+| Runtime  | [Bun](https://bun.sh)                                                                                           |
+| Backend  | [ElysiaJS](https://elysiajs.com)                                                                                |
+| Frontend | [React](https://react.dev) + [TypeScript](https://www.typescriptlang.org)                                       |
+| Build    | [Vite](https://vitejs.dev) + [vite-plugin-singlefile](https://github.com/richardtallent/vite-plugin-singlefile) |
+| Parser   | [@babel/parser](https://babeljs.io/docs/babel-parser) + [@vue/compiler-sfc](https://vuejs.org)                  |
 
 ## Development
 

@@ -1,108 +1,106 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FileTreeContainer } from './components/FileTree';
-import { ResultPanel } from './components/ResultPanel';
-import { ProgressBar } from './components/ProgressBar';
-import { useWebSocket } from './hooks/useWebSocket';
-import type { TreeNode, FileAnalysis } from './types';
+import type { FileAnalysis, TreeNode } from './types'
+import * as React from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { FileTreeContainer } from './components/FileTree'
+import { ProgressBar } from './components/ProgressBar'
+import { ResultPanel } from './components/ResultPanel'
+import { useWebSocket } from './hooks/useWebSocket'
 
 interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+  success: boolean
+  data?: T
+  error?: string
+  message?: string
 }
 
-const API_BASE = '/api';
+const API_BASE = '/api'
 
 export function App() {
-  const [fileTree, setFileTree] = useState<TreeNode | null>(null);
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<'file' | 'directory' | null>(null);
-  const [analysis, setAnalysis] = useState<FileAnalysis | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAnalyzingDir, setIsAnalyzingDir] = useState(false);
+  const [fileTree, setFileTree] = useState<TreeNode | null>(null)
+  const [selectedPath, setSelectedPath] = useState<string | null>(null)
+  const [selectedType, setSelectedType] = useState<'file' | 'directory' | null>(null)
+  const [analysis, setAnalysis] = useState<FileAnalysis | null>(null)
 
-  const wsProtocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsHost = typeof window !== 'undefined' ? window.location.host : 'localhost:3000';
+  // 1. 将原先的 isLoading 改名，仅用于 fetch file 的加载控制
+  const [isFetchingFile, setIsFetchingFile] = useState(false)
+  const [isAnalyzingDir, setIsAnalyzingDir] = useState(false)
+
+  const wsProtocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const wsHost = typeof window !== 'undefined' ? window.location.host : 'localhost:3000'
 
   const { progress, results, error, isConnected } = useWebSocket(
-    `${wsProtocol}//${wsHost}/ws`
-  );
+    `${wsProtocol}//${wsHost}/ws`,
+  )
+
+  // 2. 动态派生 isLoading 状态，彻底去掉更新 isLoading 的 useEffect
+  const isLoading = isFetchingFile || isAnalyzingDir || !!progress
 
   // Fetch file tree on mount
+  // (这里不受警告影响，因为 setFileTree 在异步的 .then 回调中)
   useEffect(() => {
     fetch(`${API_BASE}/file-tree`)
-      .then((res) => res.json())
+      .then(res => res.json())
       .then((data: ApiResponse<TreeNode>) => {
         if (data.success && data.data) {
-          setFileTree(data.data);
+          setFileTree(data.data)
         }
       })
-      .catch((err) => console.error('Failed to fetch file tree:', err));
-  }, []);
+      .catch(err => console.error('Failed to fetch file tree:', err))
+  }, [])
 
-  // Handle directory analysis completion
-  useEffect(() => {
-    if (results.length > 0 && isAnalyzingDir) {
-      // Aggregate all results
-      const aggregated = aggregateResults(results);
-      setAnalysis(aggregated);
-      setIsAnalyzingDir(false);
-    }
-  }, [results, isAnalyzingDir]);
+  // 3. 按照 React 官方推荐做法：直接在渲染期间更新派生状态，取代 useEffect
+  // React 会在执行到这里时立即触发重新渲染，省去了一次多余的 Effect 渲染生命周期
+  if (results.length > 0 && isAnalyzingDir) {
+    const aggregated = aggregateResults(results)
+    setAnalysis(aggregated)
+    setIsAnalyzingDir(false)
+  }
 
   const handleSelect = useCallback(async (path: string, type: 'file' | 'directory') => {
-    setSelectedPath(path);
-    setSelectedType(type);
+    setSelectedPath(path)
+    setSelectedType(type)
 
     if (type === 'file') {
       // Fetch single file analysis
-      setIsLoading(true);
+      setIsFetchingFile(true) // 原本是 setIsLoading(true)
       try {
-        const res = await fetch(`${API_BASE}/analyze/file?path=${encodeURIComponent(path)}`);
-        const data: ApiResponse<FileAnalysis> = await res.json();
+        const res = await fetch(`${API_BASE}/analyze/file?path=${encodeURIComponent(path)}`)
+        const data: ApiResponse<FileAnalysis> = await res.json()
         if (data.success && data.data) {
-          setAnalysis(data.data);
-        } else {
-          setAnalysis(null);
+          setAnalysis(data.data)
         }
-      } catch (err) {
-        console.error('Failed to analyze file:', err);
-        setAnalysis(null);
+        else {
+          setAnalysis(null)
+        }
       }
-      setIsLoading(false);
-    } else {
+      catch (err) {
+        console.error('Failed to analyze file:', err)
+        setAnalysis(null)
+      }
+      setIsFetchingFile(false) // 原本是 setIsLoading(false)
+    }
+    else {
       // Start directory analysis via WebSocket
-      setIsAnalyzingDir(true);
-      setIsLoading(true);
+      setIsAnalyzingDir(true)
+      // 注意：这里不需要再手动设置 setIsLoading(true) 啦，因为 isAnalyzingDir 已经为 true
       try {
         const res = await fetch(`${API_BASE}/analyze`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path }),
-        });
-        const data: ApiResponse<null> = await res.json();
+        })
+        const data: ApiResponse<null> = await res.json()
         if (!data.success) {
-          console.error('Failed to start analysis:', data.error);
-          setIsLoading(false);
-          setIsAnalyzingDir(false);
+          console.error('Failed to start analysis:', data.error)
+          setIsAnalyzingDir(false)
         }
-      } catch (err) {
-        console.error('Failed to start analysis:', err);
-        setIsLoading(false);
-        setIsAnalyzingDir(false);
+      }
+      catch (err) {
+        console.error('Failed to start analysis:', err)
+        setIsAnalyzingDir(false)
       }
     }
-  }, []);
-
-  // Update loading state based on progress
-  useEffect(() => {
-    if (progress) {
-      setIsLoading(true);
-    } else if (!isAnalyzingDir) {
-      setIsLoading(false);
-    }
-  }, [progress, isAnalyzingDir]);
+  }, [])
 
   return (
     <div
@@ -168,7 +166,7 @@ export function App() {
       </header>
 
       {/* Progress Bar */}
-      {progress && <ProgressBar progress={progress} />}
+      <ProgressBar progress={progress} />
 
       {/* Main Content */}
       <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -228,7 +226,7 @@ export function App() {
         </div>
       )}
     </div>
-  );
+  )
 }
 
 // Helper function to aggregate results
@@ -240,20 +238,20 @@ function aggregateResults(results: FileAnalysis[]): FileAnalysis {
       features: [],
       browserSupport: [],
       minVersions: { chrome: '0', firefox: '0', safari: '0', edge: '0' },
-    };
+    }
   }
 
-  const allFeatures = results.flatMap((r) => r.features);
-  const allBrowserSupport = results.flatMap((r) => r.browserSupport);
+  const allFeatures = results.flatMap(r => r.features)
+  const allBrowserSupport = results.flatMap(r => r.browserSupport)
 
   // Calculate max versions
-  const maxVersions = { chrome: '0', firefox: '0', safari: '0', edge: '0' };
+  const maxVersions = { chrome: '0', firefox: '0', safari: '0', edge: '0' }
   for (const result of results) {
     for (const [browser, version] of Object.entries(result.minVersions)) {
       if (version && version !== '0') {
-        const current = maxVersions[browser as keyof typeof maxVersions];
+        const current = maxVersions[browser as keyof typeof maxVersions]
         if (compareVersions(version, current) > 0) {
-          maxVersions[browser as keyof typeof maxVersions] = version;
+          maxVersions[browser as keyof typeof maxVersions] = version
         }
       }
     }
@@ -265,21 +263,25 @@ function aggregateResults(results: FileAnalysis[]): FileAnalysis {
     features: allFeatures,
     browserSupport: allBrowserSupport,
     minVersions: maxVersions,
-  };
+  }
 }
 
 function compareVersions(a: string, b: string): number {
-  if (a === '0') return -1;
-  if (b === '0') return 1;
+  if (a === '0')
+    return -1
+  if (b === '0')
+    return 1
 
-  const aParts = a.split('.').map(Number);
-  const bParts = b.split('.').map(Number);
+  const aParts = a.split('.').map(Number)
+  const bParts = b.split('.').map(Number)
 
   for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-    const aVal = aParts[i] ?? 0;
-    const bVal = bParts[i] ?? 0;
-    if (aVal > bVal) return 1;
-    if (aVal < bVal) return -1;
+    const aVal = aParts[i] ?? 0
+    const bVal = bParts[i] ?? 0
+    if (aVal > bVal)
+      return 1
+    if (aVal < bVal)
+      return -1
   }
-  return 0;
+  return 0
 }

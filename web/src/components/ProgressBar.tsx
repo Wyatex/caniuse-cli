@@ -1,16 +1,16 @@
-import React from 'react';
-import type { ProgressMessage } from '../types';
+import type { ProgressMessage } from '../types'
+import * as React from 'react'
 
 interface ProgressBarProps {
-  progress: ProgressMessage | null;
+  progress: ProgressMessage | null
 }
 
 export function ProgressBar({ progress }: ProgressBarProps) {
   if (!progress) {
-    return null;
+    return null
   }
 
-  const { current, total, currentFile, percentage } = progress;
+  const { current, total, currentFile, percentage } = progress
 
   return (
     <div
@@ -32,7 +32,10 @@ export function ProgressBar({ progress }: ProgressBarProps) {
           Analyzing files...
         </span>
         <span style={{ fontSize: '14px', color: '#4da6ff', fontWeight: 600 }}>
-          {current} / {total}
+          {current}
+          {' '}
+          /
+          {total}
         </span>
       </div>
 
@@ -69,5 +72,5 @@ export function ProgressBar({ progress }: ProgressBarProps) {
         {currentFile}
       </div>
     </div>
-  );
+  )
 }
