@@ -2,7 +2,7 @@ import type { FileAnalysis, TreeNode } from './types'
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { FileTreeContainer } from './components/FileTree'
-import { ProgressBar } from './components/ProgressBar'
+import { Header } from './components/Header'
 import { ResultPanel } from './components/ResultPanel'
 import { useWebSocket } from './hooks/useWebSocket'
 
@@ -112,61 +112,12 @@ export function App() {
         color: '#eee',
       }}
     >
-      {/* Header */}
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 20px',
-          backgroundColor: 'rgba(0, 0, 0, 0.3)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <span style={{ fontSize: '24px' }}>🔍</span>
-          <h1 style={{ fontSize: '18px', fontWeight: 600 }}>caniuse-cli</h1>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '12px',
-              color: isConnected ? '#4ade80' : '#ef4444',
-            }}
-          >
-            <span
-              style={{
-                width: '8px',
-                height: '8px',
-                borderRadius: '50%',
-                backgroundColor: isConnected ? '#4ade80' : '#ef4444',
-              }}
-            />
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </div>
-          {selectedPath && (
-            <div
-              style={{
-                fontSize: '12px',
-                color: '#888',
-                maxWidth: '300px',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {selectedType === 'directory' ? '📁 ' : '📄 '}
-              {selectedPath.split(/[/\\]/).pop()}
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* Progress Bar */}
-      <ProgressBar progress={progress} />
+      <Header
+        progress={progress}
+        isConnected={isConnected}
+        selectedPath={selectedPath}
+        selectedType={selectedType}
+      />
 
       {/* Main Content */}
       <main style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
