@@ -3,7 +3,10 @@
     "allow": [
       "Bash(ls:*)",
       "Bash(pkill:*)",
-      "Bash(bun:*)"
+      "Bash(bun:*)",
+      "Bash(sleep:*)",
+      "Bash(curl:*)",
+      "Bash(cd:*)"
     ]
   }
 }

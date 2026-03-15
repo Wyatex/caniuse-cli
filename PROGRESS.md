@@ -17,7 +17,7 @@
 | 前端框架 | React + TypeScript |
 | 文件扫描 | fast-glob |
 | 代码分析 | @babel/parser + @babel/traverse |
-| 兼容性数据 | caniuse-lite |
+| 兼容性数据 | caniuse-lite, @babel/compat-data, core-js-compat |
 | 前端构建 | Vite |
 | CLI 解析 | Commander |
 
@@ -45,7 +45,7 @@
 #### 文件扫描器 (`src/scanner/fileScanner.ts`)
 - [x] 使用 fast-glob 扫描文件
 - [x] 支持文件类型：`.js`, `.ts`, `.jsx`, `.tsx`, `.vue`
-- [x] 忽略目录：`node_modules`, `dist`, `build`
+- [x] 忽略目录：`node_modules`, `build`
 
 #### AST 分析器 (`src/scanner/astAnalyzer.ts`)
 - [x] 使用 @babel/parser 解析代码
@@ -61,8 +61,13 @@
 - [x] 支持 Vue 单文件组件解析 (使用 @vue/compiler-sfc)
 
 #### 浏览器兼容性计算 (`src/scanner/browserCompat.ts`)
-- [x] 特性名称映射到 caniuse-lite ID
-- [x] 内置 `KNOWN_FEATURE_VERSIONS` 作为 fallback
+- [x] 多数据源支持，按优先级查询：
+  1. `MANUAL_FEATURE_VERSIONS` - 手动配置的 fallback
+  2. `@babel/compat-data` - 语法特性（transform plugins）
+  3. `caniuse-lite` - API 特性（原生支持版本）
+  4. `core-js-compat` - Polyfill 模块（作为补充）
+- [x] 特性名称映射到各数据源 ID (`src/scanner/featureMappings.ts`)
+- [x] 数据源加载器 (`src/scanner/dataSources.ts`)
 - [x] 计算各浏览器最低版本 (Chrome, Firefox, Safari, Edge)
 - [x] 版本字符串规范化处理
 
@@ -103,74 +108,27 @@
 | `PrivateIdentifier` 未从 @babel/types 导出 | 移除该 visitor |
 | caniuse-lite 无类型声明 | 使用 `require()` 并 fallback 到内置数据 |
 | 前端 TS 找不到 `window`, `document` | 创建单独的 `web/tsconfig.json` 添加 DOM lib |
+| `Object.values()` / `Object.entries()` 显示 "v1+" | `getCanIUseSupport` 未正确解压 caniuse-lite 压缩数据，需使用 `feature()` 函数解码 |
+| `Array.prototype.includes()` 显示 Firefox 102 | core-js-compat 返回的是"需要 polyfill 的版本"而非"原生支持版本"，已将 `array-includes` 等特性映射到 caniuse-lite |
+| Safari 返回 "TP" 版本 | `findMinSupportedVersion` 跳过 'TP'、'preview'、'all' 等特殊版本 |
 
 ---
 
-## 未完成的工作
+### 已完成的新功能
 
-### 当前阻塞问题
+1. **文件打开功能**
+   - 添加 `/api/open-file` 端点 (`src/server/routes/openFile.ts`)
+   - 通过 WebStorm CLI 打开文件并定位到指定行
+   - 前端点击文件链接调用该端点
 
-**错误信息**: `Object.entries requires that input parameter not be null or undefined`
+2. **结果面板增强**
+   - Line 显示改为文件名:行号格式
+   - 文件路径显示为超链接，点击后打开 WebStorm
+   - Detected Features 按浏览器版本从高到低排序
 
-**发现过程**:
-1. ✅ Scanner 模块单独测试正常工作
-2. ✅ Elysia 路由基础测试正常工作
-3. ❌ 通过 HTTP 调用 analyze 端点时出错
-
-**测试结果**:
-```bash
-# 直接测试 scanner - 正常
-bun -e "import { analyzeFile } from './src/scanner'; console.log(analyzeFile('./src/index.ts'));"
-
-# 测试 Elysia 路由 - 正常
-bun -e "import Elysia from 'elysia'; const app = new Elysia(); ..."
-
-# 通过 HTTP 调用 - 出错
-curl "http://localhost:3000/api/analyze/file?path=src/index.ts"
-```
-
-**初步判断**:
-- 错误发生在 HTTP 请求处理链中
-- 不是 scanner 代码的问题
-- 可能是 query 参数解析或 Elysia 某个中间件的问题
-
----
-
-## 后续计划
-
-### 紧急任务
-
-1. **调试 HTTP 请求错误**
-   - 在 `analyzeRoute` 函数中添加详细日志
-   - 检查 Elysia 的 query 参数解析
-   - 测试是否是 Bun/Elysia 版本兼容问题
-
-2. **可能的调试方向**:
-   ```typescript
-   // 在 analyze.ts 中添加日志
-   .get('/analyze/file', ({ query }) => {
-     console.log('Query received:', query);
-     console.log('Query type:', typeof query);
-     // ...
-   })
-   ```
-
-### 后续任务
-
-1. **完成端到端测试**
-   - 修复错误后测试完整流程
-   - 测试文件树加载
-   - 测试文件分析
-   - 测试目录扫描进度
-
-2. **前端集成测试**
-   - 构建前端 (`cd web && bun run build`)
-   - 启动完整应用测试
-   - 验证 UI 交互
-
-3. **错误处理完善**
-   - 添加更友好的错误提示
-   - 处理边界情况
+3. **代码改进**
+   - CodeFeature 类型添加 `maxVersion` 字段
+   - 后端计算每个特性的最高版本要求用于排序
 
 ---
 
@@ -185,6 +143,8 @@ curl "http://localhost:3000/api/analyze/file?path=src/index.ts"
 | 扫描器入口 | `src/scanner/index.ts` |
 | AST 分析 | `src/scanner/astAnalyzer.ts` |
 | 浏览器兼容性 | `src/scanner/browserCompat.ts` |
+| 数据源加载器 | `src/scanner/dataSources.ts` |
+| 特性映射配置 | `src/scanner/featureMappings.ts` |
 | 前端入口 | `web/src/main.tsx` |
 | 主应用 | `web/src/App.tsx` |
 
@@ -213,4 +173,10 @@ bun run start --open
 
 ## 更新日志
 
+- **2026-03-15**: 修复浏览器兼容性数据源问题
+  - 重构数据源架构：拆分为 `dataSources.ts` 和 `featureMappings.ts`
+  - 修复 caniuse-lite 压缩数据解码问题
+  - 新增 caniuse-lite 映射：`array-includes`, `array-find`, `array-findindex`, `string-includes`, `array-flat`
+  - 修复 Safari 返回 "TP" 版本的问题
+- **2024-03-15**: 修复 analyze 端点错误，添加文件打开功能和特性排序
 - **2024-03-15**: 完成项目初始化和主要功能实现，正在调试 HTTP 请求错误

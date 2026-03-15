@@ -2,7 +2,7 @@ import fg from 'fast-glob';
 import {join} from 'path';
 
 export const SCAN_PATTERNS = ['**/*.{js,ts,jsx,tsx,vue}'];
-export const IGNORE_PATTERNS = ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.git/**'];
+export const IGNORE_PATTERNS = ['**/node_modules/**', '**/.git/**'];
 
 export interface ScanResult {
   files: string[];

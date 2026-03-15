@@ -15,6 +15,7 @@ export interface CodeFeature {
     column: number;
   };
   syntax: string;
+  maxVersion?: string; // Maximum required version across browsers, for sorting
 }
 
 export interface BrowserSupport {

@@ -12,10 +12,103 @@ export interface CodeFeature {
     column: number;
   };
   syntax: string;
+  maxVersion?: string; // Maximum required version across browsers, for sorting
 }
 
 // Track which logical assignment operators are ES2021
 const LOGICAL_ASSIGNMENT_OPERATORS = ['??=', '||=', '&&='];
+
+// API detection configuration
+const OBJECT_METHODS: Record<string, string> = {
+  entries: 'object-entries',
+  values: 'object-values',
+  keys: 'object-keys',
+  assign: 'object-assign',
+  is: 'object-is',
+  fromEntries: 'object-fromentries',
+};
+
+const ARRAY_METHODS: Record<string, string> = {
+  includes: 'array-includes',
+  find: 'array-find',
+  findIndex: 'array-findindex',
+  findLast: 'es2023-array-methods',
+  findLastIndex: 'es2023-array-methods',
+  flat: 'array-flat',
+  flatMap: 'array-flat',
+  fill: 'array-fill',
+  copyWithin: 'array-copywithin',
+  at: 'array-at',
+  toSorted: 'es2023-array-methods',
+  toReversed: 'es2023-array-methods',
+  with: 'es2023-array-methods',
+};
+
+const STRING_METHODS: Record<string, string> = {
+  includes: 'string-includes',
+  startsWith: 'string-startswith',
+  endsWith: 'string-endswith',
+  repeat: 'string-repeat',
+  padStart: 'string-padstart',
+  padEnd: 'string-padend',
+  trimStart: 'string-trimstart',
+  trimEnd: 'string-trimend',
+  trimLeft: 'string-trimstart',
+  trimRight: 'string-trimend',
+  matchAll: 'string-matchall',
+  replaceAll: 'string-replaceall',
+};
+
+const PROMISE_METHODS: Record<string, string> = {
+  all: 'promise-all',
+  allSettled: 'promise-allsettled',
+  any: 'promise-any',
+  race: 'promise-all',
+  finally: 'promise-finally',
+};
+
+const NUMBER_METHODS: Record<string, string> = {
+  isNaN: 'number-isnan',
+  isFinite: 'number-isfinite',
+  isInteger: 'number-isinteger',
+  isSafeInteger: 'number-issafeinteger',
+  parseFloat: 'number-parsefloat',
+  parseInt: 'number-parseint',
+};
+
+const MATH_METHODS: Record<string, string> = {
+  trunc: 'math-trunc',
+  sign: 'math-sign',
+  cbrt: 'math-cbrt',
+  hypot: 'math-hypot',
+};
+
+const GLOBAL_OBJECTS: Record<string, string> = {
+  Map: 'map',
+  Set: 'set',
+  WeakMap: 'weakmap',
+  WeakSet: 'weakset',
+  Symbol: 'symbols',
+  Proxy: 'proxy',
+  Reflect: 'reflect',
+  Promise: 'promise',
+  URL: 'url',
+  URLSearchParams: 'url-search-params',
+  AbortController: 'abortcontroller',
+  IntersectionObserver: 'intersection-observer',
+  ResizeObserver: 'resize-observer',
+  MutationObserver: 'mutation-observer',
+  BroadcastChannel: 'broadcast-channel',
+  TextEncoder: 'text-encoder',
+  TextDecoder: 'text-decoder',
+  BigInt: 'bigint',
+};
+
+const GLOBAL_FUNCTIONS: Record<string, string> = {
+  fetch: 'fetch',
+  isFinite: 'isfinite',
+  isNaN: 'isnan',
+};
 
 export function analyzeFile(filePath: string): CodeFeature[] {
   const content = readFileSync(filePath, 'utf-8');
@@ -62,16 +155,24 @@ export function analyzeFile(filePath: string): CodeFeature[] {
     });
 
     traverse(ast, {
+      // ES6+ Syntax
       ArrowFunctionExpression(path: NodePath<t.ArrowFunctionExpression>) {
         addFeature(features, 'arrow-functions', path.node.loc, filePath, 'Arrow Function', seenFeatures);
       },
 
       ClassDeclaration(path: NodePath<t.ClassDeclaration>) {
         addFeature(features, 'es6-class', path.node.loc, filePath, 'Class Declaration', seenFeatures);
+        // Check for class fields
+        if (path.node.body.body.some(n => t.isClassProperty(n) || t.isClassPrivateProperty(n))) {
+          addFeature(features, 'public-class-fields', path.node.loc, filePath, 'Class Fields', seenFeatures);
+        }
       },
 
       ClassExpression(path: NodePath<t.ClassExpression>) {
         addFeature(features, 'es6-class', path.node.loc, filePath, 'Class Expression', seenFeatures);
+        if (path.node.body.body.some(n => t.isClassProperty(n) || t.isClassPrivateProperty(n))) {
+          addFeature(features, 'public-class-fields', path.node.loc, filePath, 'Class Fields', seenFeatures);
+        }
       },
 
       TemplateLiteral(path: NodePath<t.TemplateLiteral>) {
@@ -99,13 +200,18 @@ export function analyzeFile(filePath: string): CodeFeature[] {
       },
 
       LogicalExpression(path: NodePath<t.LogicalExpression>) {
-        // Nullish coalescing operator ??
         if (path.node.operator === '??') {
           addFeature(features, 'nullish-coalescing', path.node.loc, filePath, 'Nullish Coalescing', seenFeatures);
         }
-        // Logical assignment operators ??= ||= &&=
         if (LOGICAL_ASSIGNMENT_OPERATORS.includes(path.node.operator)) {
           addFeature(features, 'logical-assignment', path.node.loc, filePath, `Logical Assignment (${path.node.operator})`, seenFeatures);
+        }
+      },
+
+      BinaryExpression(path: NodePath<t.BinaryExpression>) {
+        // Exponentiation operator
+        if (path.node.operator === '**') {
+          addFeature(features, 'exponentiation', path.node.loc, filePath, 'Exponentiation Operator', seenFeatures);
         }
       },
 
@@ -131,12 +237,20 @@ export function analyzeFile(filePath: string): CodeFeature[] {
         addFeature(features, 'destructuring', path.node.loc, filePath, 'Array Destructuring', seenFeatures);
       },
 
+      ForOfStatement(path: NodePath<t.ForOfStatement>) {
+        addFeature(features, 'for-of', path.node.loc, filePath, 'For...of Loop', seenFeatures);
+      },
+
       FunctionDeclaration(path: NodePath<t.FunctionDeclaration>) {
         if (path.node.async) {
           addFeature(features, 'async-functions', path.node.loc, filePath, 'Async Function', seenFeatures);
         }
         if (path.node.generator) {
           addFeature(features, 'generators', path.node.loc, filePath, 'Generator Function', seenFeatures);
+        }
+        // Default parameters
+        if (path.node.params.some(p => t.isAssignmentPattern(p))) {
+          addFeature(features, 'default-parameters', path.node.loc, filePath, 'Default Parameters', seenFeatures);
         }
       },
 
@@ -147,21 +261,94 @@ export function analyzeFile(filePath: string): CodeFeature[] {
         if (path.node.generator) {
           addFeature(features, 'generators', path.node.loc, filePath, 'Generator Function', seenFeatures);
         }
+        if (path.node.params.some(p => t.isAssignmentPattern(p))) {
+          addFeature(features, 'default-parameters', path.node.loc, filePath, 'Default Parameters', seenFeatures);
+        }
       },
 
       ImportExpression(path: NodePath<t.ImportExpression>) {
         addFeature(features, 'dynamic-import', path.node.loc, filePath, 'Dynamic Import', seenFeatures);
       },
 
-      // ES2023 array methods
+      NewExpression(path: NodePath<t.NewExpression>) {
+        const callee = path.node.callee;
+        if (t.isIdentifier(callee)) {
+          const feature = GLOBAL_OBJECTS[callee.name];
+          if (feature) {
+            addFeature(features, feature, path.node.loc, filePath, `new ${callee.name}()`, seenFeatures);
+          }
+        }
+      },
+
       CallExpression(path: NodePath<t.CallExpression>) {
         const callee = path.node.callee;
+
+        // Check for global function calls
+        if (t.isIdentifier(callee)) {
+          const feature = GLOBAL_FUNCTIONS[callee.name];
+          if (feature) {
+            addFeature(features, feature, path.node.loc, filePath, `${callee.name}()`, seenFeatures);
+          }
+
+          // Array.from, Array.of
+          if (callee.name === 'Array') {
+            // This is handled separately - Array constructor
+          }
+        }
+
+        // Check for member expression calls (obj.method())
         if (t.isMemberExpression(callee)) {
           const property = callee.property;
+
           if (t.isIdentifier(property)) {
-            const es2023Methods = ['toSorted', 'toReversed', 'with', 'findLast', 'findLastIndex'];
-            if (es2023Methods.includes(property.name)) {
-              addFeature(features, 'es2023-array-methods', path.node.loc, filePath, `Array.${property.name}()`, seenFeatures);
+            // Check for Object methods
+            if (t.isIdentifier(callee.object) && callee.object.name === 'Object') {
+              const feature = OBJECT_METHODS[property.name];
+              if (feature) {
+                addFeature(features, feature, path.node.loc, filePath, `Object.${property.name}()`, seenFeatures);
+              }
+              if (property.name === 'from') {
+                addFeature(features, 'array-from', path.node.loc, filePath, 'Array.from()', seenFeatures);
+              }
+              if (property.name === 'of') {
+                addFeature(features, 'array-of', path.node.loc, filePath, 'Array.of()', seenFeatures);
+              }
+            }
+
+            // Check for Number methods
+            if (t.isIdentifier(callee.object) && callee.object.name === 'Number') {
+              const feature = NUMBER_METHODS[property.name];
+              if (feature) {
+                addFeature(features, feature, path.node.loc, filePath, `Number.${property.name}()`, seenFeatures);
+              }
+            }
+
+            // Check for Math methods
+            if (t.isIdentifier(callee.object) && callee.object.name === 'Math') {
+              const feature = MATH_METHODS[property.name];
+              if (feature) {
+                addFeature(features, feature, path.node.loc, filePath, `Math.${property.name}()`, seenFeatures);
+              }
+            }
+
+            // Check for Promise methods
+            if (t.isIdentifier(callee.object) && callee.object.name === 'Promise') {
+              const feature = PROMISE_METHODS[property.name];
+              if (feature) {
+                addFeature(features, feature, path.node.loc, filePath, `Promise.${property.name}()`, seenFeatures);
+              }
+            }
+
+            // Check for Array prototype methods
+            const arrayFeature = ARRAY_METHODS[property.name];
+            if (arrayFeature) {
+              addFeature(features, arrayFeature, path.node.loc, filePath, `Array.prototype.${property.name}()`, seenFeatures);
+            }
+
+            // Check for String prototype methods
+            const stringFeature = STRING_METHODS[property.name];
+            if (stringFeature) {
+              addFeature(features, stringFeature, path.node.loc, filePath, `String.prototype.${property.name}()`, seenFeatures);
             }
           }
         }
@@ -169,16 +356,24 @@ export function analyzeFile(filePath: string): CodeFeature[] {
 
       // Top-level await
       Program(path: NodePath<t.Program>) {
-        // Check for top-level await by looking at the body
         for (const node of path.node.body) {
           if (t.isExpressionStatement(node) && t.isAwaitExpression(node.expression)) {
             addFeature(features, 'top-level-await', node.loc, filePath, 'Top-level Await', seenFeatures);
           }
         }
       },
+
+      // Object rest spread in object expressions
+      ObjectExpression(path: NodePath<t.ObjectExpression>) {
+        for (const prop of path.node.properties) {
+          if (t.isSpreadElement(prop)) {
+            addFeature(features, 'object-rest-spread', path.node.loc, filePath, 'Object Spread', seenFeatures);
+            break;
+          }
+        }
+      },
     });
   } catch (error) {
-    // Parse error - skip this file
     console.error(`Error parsing ${filePath}:`, error);
   }
 
