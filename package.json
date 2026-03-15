@@ -1,7 +1,7 @@
 {
   "name": "@wyatex/caniuse-cli",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "module": "src/index.ts",
   "bin": {
     "caniuse-cli": "./src/index.ts"
