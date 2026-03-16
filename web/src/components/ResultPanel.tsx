@@ -4,18 +4,12 @@ import { BrowserBadgeList } from './BrowserBadge'
 
 // Compare version strings for sorting
 function compareVersions(a: string, b: string): number {
-  if (a === 'N/A')
-    return -1
-  if (b === 'N/A')
-    return 1
-  if (a === 'all')
-    return 1
-  if (b === 'all')
-    return -1
-  if (a === 'preview')
-    return -1
-  if (b === 'preview')
-    return 1
+  if (a === 'N/A') return -1
+  if (b === 'N/A') return 1
+  if (a === 'all') return 1
+  if (b === 'all') return -1
+  if (a === 'preview') return -1
+  if (b === 'preview') return 1
 
   const aParts = a.split('.').map(Number)
   const bParts = b.split('.').map(Number)
@@ -24,10 +18,8 @@ function compareVersions(a: string, b: string): number {
     const aVal = aParts[i] ?? 0
     const bVal = bParts[i] ?? 0
 
-    if (aVal > bVal)
-      return 1
-    if (aVal < bVal)
-      return -1
+    if (aVal > bVal) return 1
+    if (aVal < bVal) return -1
   }
 
   return 0
@@ -38,7 +30,7 @@ interface FeatureGroup {
   feature: string
   syntax: string
   maxVersion: string
-  locations: Array<{ file: string, line: number, column: number }>
+  locations: Array<{ file: string; line: number; column: number }>
 }
 
 function groupFeatures(features: CodeFeature[]): FeatureGroup[] {
@@ -58,18 +50,20 @@ function groupFeatures(features: CodeFeature[]): FeatureGroup[] {
 
   // Sort groups by maxVersion descending (higher version first)
   return [...groups.values()].toSorted((a, b) =>
-    compareVersions(b.maxVersion, a.maxVersion))
+    compareVersions(b.maxVersion, a.maxVersion),
+  )
 }
 
 async function openFile(filePath: string, line: number) {
   try {
-    const response = await fetch(`/api/open-file?path=${encodeURIComponent(filePath)}&line=${line}`)
+    const response = await fetch(
+      `/api/open-file?path=${encodeURIComponent(filePath)}&line=${line}`,
+    )
     const result = await response.json()
     if (!result.success) {
       console.error('Failed to open file:', result.error)
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.error('Failed to open file:', error)
   }
 }
@@ -115,17 +109,15 @@ function FeatureGroupItem({
           >
             ▶
           </span>
-          <span style={{ color: '#4da6ff', fontWeight: 500 }}>{group.syntax}</span>
+          <span style={{ color: '#4da6ff', fontWeight: 500 }}>
+            {group.syntax}
+          </span>
           <span style={{ color: '#666', marginLeft: '8px' }}>
-            (
-            {group.feature}
-            )
+            ({group.feature})
           </span>
         </div>
         <span style={{ color: '#888', fontSize: '12px' }}>
-          v
-          {group.maxVersion}
-          +
+          v{group.maxVersion}+
         </span>
       </div>
       {isExpanded && (
@@ -146,9 +138,7 @@ function FeatureGroupItem({
                   }}
                   title={loc.file}
                 >
-                  {fileName}
-                  :
-                  {loc.line}
+                  {fileName}:{loc.line}
                 </a>
               )
             })}
@@ -183,7 +173,7 @@ export function ResultPanel({
     return (
       <div
         style={{
-          height: '100%',
+          flex: 1,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -192,36 +182,53 @@ export function ResultPanel({
       >
         {/* 固定高度和宽度的容器，防止内容切换时发生上下跳动 */}
         <div style={{ textAlign: 'center', minHeight: '140px' }}>
-
           {/* 固定的图标区域 */}
-          <div style={{ height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
-            {isLoading
-              ? (
-                  <div className="spinner" style={{ fontSize: '32px' }}>⏳</div>
-                )
-              : (
-                  <div style={{ fontSize: '48px', transition: 'all 0.2s ease' }}>🔍</div>
-                )}
+          <div
+            style={{
+              height: '64px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: '16px',
+            }}
+          >
+            {isLoading ? (
+              <div className="spinner" style={{ fontSize: '32px' }}>
+                ⏳
+              </div>
+            ) : (
+              <div style={{ fontSize: '48px', transition: 'all 0.2s ease' }}>
+                🔍
+              </div>
+            )}
           </div>
 
           {/* 固定的标题区域 */}
-          <div style={{ fontSize: '16px', height: '24px', transition: 'color 0.2s ease' }}>
-            {isLoading ? 'Analyzing...' : 'Select a file or directory to analyze'}
+          <div
+            style={{
+              fontSize: '16px',
+              height: '24px',
+              transition: 'color 0.2s ease',
+            }}
+          >
+            {isLoading
+              ? 'Analyzing...'
+              : 'Select a file or directory to analyze'}
           </div>
 
           {/* 固定的副标题区域：使用透明度控制显示/隐藏，而不是直接销毁 DOM */}
-          <div style={{
-            fontSize: '14px',
-            marginTop: '8px',
-            color: '#555',
-            opacity: isLoading ? 0 : 1, // 关键：加载时变为完全透明
-            visibility: isLoading ? 'hidden' : 'visible',
-            transition: 'opacity 0.2s ease',
-          }}
+          <div
+            style={{
+              fontSize: '14px',
+              marginTop: '8px',
+              color: '#555',
+              opacity: isLoading ? 0 : 1, // 关键：加载时变为完全透明
+              visibility: isLoading ? 'hidden' : 'visible',
+              transition: 'opacity 0.2s ease',
+            }}
           >
             Click on any file or folder in the left panel
           </div>
-
         </div>
       </div>
     )
@@ -232,11 +239,16 @@ export function ResultPanel({
   const groupedFeatures = hasFeatures ? groupFeatures(analysis.features) : []
 
   return (
-    <div style={{ height: '100%', position: 'relative' }}>
-
-      {/* 优化体验：如果在已有结果的情况下触发了 isLoading (比如点击了另一个文件)，
-        我们不销毁当前页面，而是覆盖一个半透明的加载遮罩层。
-      */}
+    <div
+      style={{
+        flex: 1, // 修复 2：外层容器使用 flex: 1 占满父级剩余空间
+        minHeight: 0, // 修复 3：防止 Flex 子项内容溢出撑破容器的关键属性
+        position: 'relative',
+        display: 'flex', // 将外层设为 flex 容器
+        flexDirection: 'column',
+      }}
+    >
+      {/* 半透明的加载遮罩层 */}
       <div
         style={{
           position: 'absolute',
@@ -271,13 +283,15 @@ export function ResultPanel({
       </div>
 
       {/* 原本的内容区域，加载时让其轻微变暗 */}
-      <div style={{
-        height: '100%',
-        overflow: 'auto',
-        padding: '20px',
-        opacity: isLoading ? 0.6 : 1, // 加载时内容变暗
-        transition: 'opacity 0.2s ease',
-      }}
+      <div
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          padding: '20px',
+          boxSizing: 'border-box',
+          opacity: isLoading ? 0.6 : 1,
+          transition: 'opacity 0.2s ease',
+        }}
       >
         <div style={{ marginBottom: '24px' }}>
           <h3
@@ -306,37 +320,33 @@ export function ResultPanel({
               marginBottom: '12px',
             }}
           >
-            Detected Features (
-            {groupedFeatures.length}
-            )
+            Detected Features ({groupedFeatures.length})
           </h3>
 
-          {hasFeatures
-            ? (
-                <div>
-                  {groupedFeatures.map(group => (
-                    <FeatureGroupItem
-                      key={group.feature}
-                      group={group}
-                      isExpanded={expandedFeatures?.has(group.feature) ?? true}
-                      onToggle={() => onToggleFeature?.(group.feature)}
-                    />
-                  ))}
-                </div>
-              )
-            : (
-                <div
-                  style={{
-                    padding: '20px',
-                    textAlign: 'center',
-                    color: '#555',
-                    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                    borderRadius: '8px',
-                  }}
-                >
-                  No modern JavaScript features detected
-                </div>
-              )}
+          {hasFeatures ? (
+            <div>
+              {groupedFeatures.map((group) => (
+                <FeatureGroupItem
+                  key={group.feature}
+                  group={group}
+                  isExpanded={expandedFeatures?.has(group.feature) ?? true}
+                  onToggle={() => onToggleFeature?.(group.feature)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                padding: '20px',
+                textAlign: 'center',
+                color: '#555',
+                backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '8px',
+              }}
+            >
+              No modern JavaScript features detected
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -27,7 +27,9 @@ export function analyzeRoute(targetDir: string) {
         return { success: false, error: 'Path is required' }
       }
 
-      const absolutePath = path.startsWith(targetDir) ? path : join(targetDir, path)
+      const absolutePath = path.startsWith(targetDir)
+        ? path
+        : join(targetDir, path)
 
       if (!existsSync(absolutePath)) {
         return { success: false, error: 'Path does not exist' }
@@ -39,17 +41,20 @@ export function analyzeRoute(targetDir: string) {
         // Analyze directory asynchronously with WebSocket progress
         analyzeDirectory(absolutePath, targetDir)
         return { success: true, message: 'Analysis started' }
-      }
-      else {
+      } else {
         // Analyze single file
         const relativePath = relative(targetDir, absolutePath)
         const features = analyzeFile(absolutePath)
-        const result = calculateBrowserSupport(features, absolutePath, relativePath)
+        const result = calculateBrowserSupport(
+          features,
+          absolutePath,
+          relativePath,
+        )
 
         const analysisResult: FileAnalysisResult = {
           path: result.path,
           relativePath: result.relativePath,
-          features: result.features,
+          features: result.features.filter(f => f.maxVersion),
           browserSupport: result.browserSupport,
           minVersions: result.minVersions,
         }
@@ -70,7 +75,9 @@ export function analyzeRoute(targetDir: string) {
           return { success: false, error: 'Path is required' }
         }
 
-        const absolutePath = path.startsWith(targetDir) ? path : join(targetDir, path)
+        const absolutePath = path.startsWith(targetDir)
+          ? path
+          : join(targetDir, path)
 
         // Check cache first
         const cached = analysisCache.get(absolutePath)
@@ -85,12 +92,16 @@ export function analyzeRoute(targetDir: string) {
 
         const relativePath = relative(targetDir, absolutePath)
         const features = analyzeFile(absolutePath)
-        const result = calculateBrowserSupport(features, absolutePath, relativePath)
+        const result = calculateBrowserSupport(
+          features,
+          absolutePath,
+          relativePath,
+        )
 
         const analysisResult: FileAnalysisResult = {
           path: result.path,
           relativePath: result.relativePath,
-          features: result.features,
+          features: result.features.filter(f => f.maxVersion),
           browserSupport: result.browserSupport,
           minVersions: result.minVersions,
         }
@@ -98,8 +109,7 @@ export function analyzeRoute(targetDir: string) {
         analysisCache.set(absolutePath, analysisResult)
 
         return { success: true, data: analysisResult }
-      }
-      catch (error) {
+      } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error'
         console.error('Analysis error:', error)
         return { success: false, error: message }
@@ -126,7 +136,10 @@ function broadcast(data: unknown): void {
   })
 }
 
-async function analyzeDirectory(dirPath: string, rootDir: string): Promise<void> {
+async function analyzeDirectory(
+  dirPath: string,
+  rootDir: string,
+): Promise<void> {
   try {
     const { files, total } = await scanFiles(dirPath)
     const results: FileAnalysisResult[] = []
@@ -151,7 +164,7 @@ async function analyzeDirectory(dirPath: string, rootDir: string): Promise<void>
       const analysisResult: FileAnalysisResult = {
         path: result.path,
         relativePath: result.relativePath,
-        features: result.features,
+        features: result.features.filter(f => f.maxVersion),
         browserSupport: result.browserSupport,
         minVersions: result.minVersions,
       }
@@ -165,9 +178,9 @@ async function analyzeDirectory(dirPath: string, rootDir: string): Promise<void>
       type: 'complete',
       results,
     })
-  }
-  catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : 'Unknown error'
     broadcast({
       type: 'error',
       message: errorMessage,

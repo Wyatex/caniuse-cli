@@ -96,7 +96,7 @@ const MANUAL_SYNTAX_VERSIONS: Record<string, BrowserVersions> = {
  * 3. caniuse-lite (API features)
  * 4. core-js-compat (polyfill modules)
  */
-function getFeatureSupport(featureName: string): BrowserVersions {
+function getFeatureSupport(featureName: string): BrowserVersions | null {
   // 0. 手动指定的特性 (如 top-level-await)
   if (MANUAL_SYNTAX_VERSIONS[featureName]) {
     return MANUAL_SYNTAX_VERSIONS[featureName]
@@ -121,11 +121,9 @@ function getFeatureSupport(featureName: string): BrowserVersions {
   if (featureName.startsWith?.('api.')) {
     const apiName = featureName.split('.')[1]
     return getMdnSupport(apiName)
-      || { chrome: '1', firefox: '1', safari: '1', edge: '1' } //
   }
 
-  // 兜底返回默认值
-  return { chrome: '1', firefox: '1', safari: '1', edge: '1' }
+  return null
 }
 
 // Compare two version strings
@@ -185,6 +183,11 @@ export function calculateBrowserSupport(features: CodeFeature[], filePath: strin
   for (const feature of features) {
     const support = getFeatureSupport(feature.feature)
 
+    // 没查到的不展示
+    if (!support) {
+      continue
+    }
+
     // Calculate max version across browsers for this feature
     const versions = Object.values(support).filter((v): v is string => v !== undefined && v !== 'N/A')
     if (versions.length > 0) {
@@ -192,7 +195,7 @@ export function calculateBrowserSupport(features: CodeFeature[], filePath: strin
     }
 
     for (const [browser, version] of Object.entries(support)) {
-      if (version !== undefined && version !== 'N/A') {
+      if (version !== undefined && version !== 'N/A' && version !== '0') {
         aggregatedVersions[browser] = aggregatedVersions[browser] ?? []
         aggregatedVersions[browser]!.push(version)
 
